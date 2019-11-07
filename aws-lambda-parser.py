@@ -2,6 +2,7 @@ import json
 import boto3
 
 list = []
+client = boto3.client('lambda')
 
 
 def next_page(marker):
@@ -13,18 +14,25 @@ def parse_page(page):
     num = len(page['Functions'])
     for n in range(num):
         if page['Functions'][n]['Runtime'] == "python2.7":
-            line = str(n) + ' ' + page['Functions'][n]['FunctionName'] + ' Runtime: ' + page['Functions'][n][
-                'Runtime'] + ' Description: ' + page['Functions'][n]['Description'] + " LastModified: " + \
-                   page['Functions'][n]['LastModified'] + " Used Role: " + page['Functions'][n]['Role']
+            arn = page['Functions'][n]['FunctionArn']
+            tags = client.list_tags(Resource=arn)
+            try:
+                tag = tags['Tags']['tr:resource-owner']
+            except:
+                tag = ''
+            line = page['Functions'][n]['FunctionName'] + ' Description: ' + page['Functions'][n][
+                'Description'] + " LastModified: " + page['Functions'][n]['LastModified'] + " Owner: " + tag
             list.append(line)
             # print(str)
 
 
 def lambda_handler(event, context):
-    client = boto3.client('lambda')
     result = client.list_functions()
     num = len(result['Functions'])
-    marker = result["NextMarker"]
+    try:
+        marker = result["NextMarker"]
+    except:
+        marker = ''
     parse_page(result)
 
     while marker:
