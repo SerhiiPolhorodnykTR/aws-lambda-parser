@@ -1,8 +1,14 @@
 import json
 import boto3
 
-lambda_list = []
 client = boto3.client('lambda')
+
+lambda_list = []
+runtime = "python2.7"
+owner_tag_name = 'tr:resource-owner'
+func = 'Functions'
+desc = "Description"
+last = "LastModified"
 
 
 def next_page(marker):
@@ -12,11 +18,11 @@ def next_page(marker):
 def parse_page(page):
     num = len(page['Functions'])
     for n in range(num):
-        if page['Functions'][n]['Runtime'] == "python2.7":
-            arn = page['Functions'][n]['FunctionArn']
+        if page[func][n]['Runtime'] == runtime:
+            arn = page[func][n]['FunctionArn']
             owner_tag = test_owner_tag(client.list_tags(Resource=arn))
-            line = page['Functions'][n]['FunctionName'] + ' Description: ' + page['Functions'][n][
-                'Description'] + " LastModified: " + page['Functions'][n]['LastModified'] + " Owner: " + owner_tag
+            line = page[func][n]['FunctionName'] + ' ' + desc + ': ' + page[func][n][desc] + ' ' + last + ': ' + \
+                   page[func][n][last] + " Owner: " + owner_tag
             lambda_list.append(line)
 
 
@@ -29,7 +35,7 @@ def test_marker(result):
 
 def test_owner_tag(result):
     try:
-        return result['Tags']['tr:resource-owner']
+        return result['Tags'][owner_tag_name]
     except Exception:
         return ''
 
